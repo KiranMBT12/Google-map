@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>Veriff Iframe</title>
-
-  <!-- ✅ Content Security Policy -->
+  
+  <!-- ✅ Veriff needs these permissions -->
   <meta http-equiv="Content-Security-Policy"
     content="
       default-src 'self' https://*.veriff.me https://*.veriff.com;
@@ -14,15 +14,15 @@
       connect-src 'self' https://*.veriff.com https://*.veriff.me;
       style-src 'self' 'unsafe-inline' https://*.veriff.com https://*.veriff.me;
     ">
-
+  
   <style>
-    body, html {
+    html, body {
       margin: 0;
       padding: 0;
-      height: 100%;
       width: 100%;
+      height: 100%;
     }
-    iframe {
+    #veriff-frame {
       width: 100%;
       height: 100%;
       border: none;
@@ -30,14 +30,22 @@
   </style>
 </head>
 <body>
-  
-  <!-- ✅ Replace YOUR_SESSION_TOKEN_HERE with a real sessionToken -->
+
+  <!-- 🔑 Iframe that loads Veriff -->
   <iframe
-    src="https://magic.veriff.me/v/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NTU2MDExMDIsInNlc3Npb25faWQiOiI1Yzk1YmRlZC1hZjNhLTRlMDctYmY1OC1lMzZmYjY5MWQ5ZmQiLCJpaWQiOiJlYzVkYzk0Yi05MWExLTQ4YTQtYjRjNS1jY2E5YTg4MjYyNGEiLCJ2aWQiOiI5ZDJhZjc4ZS1iMWMyLTQ0OTktOWY1NS0zYWVmNzNjMWI2ZWYiLCJjaWQiOiJmYWxjb24tNSIsImV4cCI6MTc1NjIwNTkwMn0.QgKjXMS4ZP4FAFjB0vllS9EwinCdwqABKsEJ-BzWwpQ"
-    allow="camera; microphone; fullscreen; autoplay"
-    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation allow-top-navigation"
-  >
-  </iframe>
+    id="veriff-frame"
+    allow="camera; microphone; fullscreen; autoplay; clipboard-write"
+    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation"
+  ></iframe>
+
+  <script>
+    // ⚠️ Replace this with your real session token from backend API
+    const sessionToken = "YOUR_FRESH_SESSION_TOKEN";
+
+    // Set iframe source dynamically
+    document.getElementById("veriff-frame").src = 
+      `https://magic.veriff.me/v/${sessionToken}`;
+  </script>
 
 </body>
 </html>
