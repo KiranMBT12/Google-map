@@ -21,12 +21,14 @@
       padding: 0;
       width: 100%;
       height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
     #embedded-container {
       width: 800px;   /* 👈 recommended minimum size: 600x680 */
       height: 800px;
       border: 1px solid #ccc;
-      margin: auto;
     }
   </style>
   
@@ -43,7 +45,7 @@
     const sessionToken = "https://magic.veriff.me/v/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NTU2MDExMDIsInNlc3Npb25faWQiOiI1Yzk1YmRlZC1hZjNhLTRlMDctYmY1OC1lMzZmYjY5MWQ5ZmQiLCJpaWQiOiJlYzVkYzk0Yi05MWExLTQ4YTQtYjRjNS1jY2E5YTg4MjYyNGEiLCJ2aWQiOiI5ZDJhZjc4ZS1iMWMyLTQ0OTktOWY1NS0zYWVmNzNjMWI2ZWYiLCJjaWQiOiJmYWxjb24tNSIsImV4cCI6MTc1NjIwNTkwMn0.QgKjXMS4ZP4FAFjB0vllS9EwinCdwqABKsEJ-BzWwpQ";
 
     // ✅ Create Veriff embedded frame
-    const veriffFrame = createVeriffFrame({
+    const veriffFrame = Veriff.createVeriffFrame({
       url: `https://magic.veriff.me/v/${sessionToken}`,
       embedded: true,
       embeddedOptions: {
