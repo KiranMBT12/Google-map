@@ -32,8 +32,8 @@
     }
   </style>
   
-  <!-- ✅ Load Veriff SDK -->
-  <script src="https://cdn.veriff.me/sdk/js/latest/veriff.js"></script>
+  <!-- ✅ Load InContext SDK (correct one for embedded) -->
+  <script src="https://cdn.veriff.me/incontext/js/v2.5.0/veriff.js"></script>
 </head>
 <body>
 
@@ -41,15 +41,18 @@
   <div id="embedded-container"></div>
 
   <script>
-    // ⚠️ Replace this with your real session token from backend API
-    const sessionToken = "https://magic.veriff.me/v/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NTU2MDExMDIsInNlc3Npb25faWQiOiI1Yzk1YmRlZC1hZjNhLTRlMDctYmY1OC1lMzZmYjY5MWQ5ZmQiLCJpaWQiOiJlYzVkYzk0Yi05MWExLTQ4YTQtYjRjNS1jY2E5YTg4MjYyNGEiLCJ2aWQiOiI5ZDJhZjc4ZS1iMWMyLTQ0OTktOWY1NS0zYWVmNzNjMWI2ZWYiLCJjaWQiOiJmYWxjb24tNSIsImV4cCI6MTc1NjIwNTkwMn0.QgKjXMS4ZP4FAFjB0vllS9EwinCdwqABKsEJ-BzWwpQ";
+    // ⚠️ Replace this with your real session URL from backend API
+    const sessionUrl = "https://magic.veriff.me/v/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NTU2MDExMDIsInNlc3Npb25faWQiOiI1Yzk1YmRlZC1hZjNhLTRlMDctYmY1OC1lMzZmYjY5MWQ5ZmQiLCJpaWQiOiJlYzVkYzk0Yi05MWExLTQ4YTQtYjRjNS1jY2E5YTg4MjYyNGEiLCJ2aWQiOiI5ZDJhZjc4ZS1iMWMyLTQ0OTktOWY1NS0zYWVmNzNjMWI2ZWYiLCJjaWQiOiJmYWxjb24tNSIsImV4cCI6MTc1NjIwNTkwMn0.QgKjXMS4ZP4FAFjB0vllS9EwinCdwqABKsEJ-BzWwpQ";
 
     // ✅ Create Veriff embedded frame
-    const veriffFrame = Veriff.createVeriffFrame({
-      url: `https://magic.veriff.me/v/${sessionToken}`,
+    createVeriffFrame({
+      url: sessionUrl,
       embedded: true,
       embeddedOptions: {
         rootElementID: 'embedded-container'
+      },
+      onEvent: function (msg) {
+        console.log("Veriff event:", msg);
       }
     });
   </script>
