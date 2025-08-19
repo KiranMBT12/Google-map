@@ -52,7 +52,7 @@
       // Capture Veriff events
       onEvent: (msg) => {
         console.log("Veriff event:", msg);
-
+          window.location.reload();
         // 🔄 If user presses "Exit" → CANCEL event → reload page
         if (msg.event === "CANCEL") {
           console.log("User exited verification — reloading...");
@@ -70,3 +70,4 @@
 
 </body>
 </html>
+
