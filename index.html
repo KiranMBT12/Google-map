@@ -26,29 +26,50 @@
 </head>
 <body>
 
-  <!-- Where Veriff iframe will go -->
   <div id="embedded-container"></div>
 
   <script>
     // ⚠️ Replace with your real session URL from backend
     const sessionUrl = "https://magic.veriff.me/v/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NTU2MDExMDIsInNlc3Npb25faWQiOiI1Yzk1YmRlZC1hZjNhLTRlMDctYmY1OC1lMzZmYjY5MWQ5ZmQiLCJpaWQiOiJlYzVkYzk0Yi05MWExLTQ4YTQtYjRjNS1jY2E5YTg4MjYyNGEiLCJ2aWQiOiI5ZDJhZjc4ZS1iMWMyLTQ0OTktOWY1NS0zYWVmNzNjMWI2ZWYiLCJjaWQiOiJmYWxjb24tNSIsImV4cCI6MTc1NjIwNTkwMn0.QgKjXMS4ZP4FAFjB0vllS9EwinCdwqABKsEJ-BzWwpQ";
 
-    // ✅ Use window.veriffSDK to create the frame
-    window.veriffSDK.createVeriffFrame({
+    // Save session in case reload is needed (iOS Safari fix)
+    sessionStorage.setItem('@veriff-session-url', sessionUrl);
+
+    // ✅ Create Veriff frame
+    const veriffFrame = window.veriffSDK.createVeriffFrame({
       url: sessionUrl,
       embedded: true,
       embeddedOptions: {
         rootElementID: 'embedded-container'
       },
-      onEvent: function (msg) {
+
+      // 👇 Handles Safari camera permission denial
+      onReload: () => {
+        console.log("onReload triggered — refreshing page...");
+        window.location.reload();
+      },
+
+      // 👇 Capture events (cancel, finish, etc.)
+      onEvent: (msg) => {
         console.log("Veriff event:", msg);
 
-        // 🔄 Reload if user closes or exits the SDK
-        if (msg && msg.event === "CANCEL") {
-          location.reload();
+        // 🔄 If user closes/cancels, reload page
+        if (msg.event === "CANCEL") {
+          window.location.reload();
+        }
+
+        // ✅ Optional: reload also when finished
+        if (msg.event === "FINISHED") {
+          window.location.reload();
         }
       }
     });
+
+    // Example: manually close Veriff modal after 2 minutes
+    // setTimeout(() => {
+    //   veriffFrame.close();
+    //   window.location.reload();
+    // }, 120000);
   </script>
 
 </body>
