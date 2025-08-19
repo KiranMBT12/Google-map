@@ -16,7 +16,11 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      background: #f9f9f9;
+    }
+    #embedded-container {
+      width: 800px;
+      height: 800px;
+      border: 1px solid #ccc;
     }
   </style>
 </head>
@@ -25,13 +29,10 @@
   <div id="embedded-container"></div>
 
   <script>
-    // 👇 Replace this with a fresh session URL you generate from backend
-    const freshSessionUrl = "https://magic.veriff.me/v/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NTU2MDExMDIsInNlc3Npb25faWQiOiI1Yzk1YmRlZC1hZjNhLTRlMDctYmY1OC1lMzZmYjY5MWQ5ZmQiLCJpaWQiOiJlYzVkYzk0Yi05MWExLTQ4YTQtYjRjNS1jY2E5YTg4MjYyNGEiLCJ2aWQiOiI5ZDJhZjc4ZS1iMWMyLTQ0OTktOWY1NS0zYWVmNzNjMWI2ZWYiLCJjaWQiOiJmYWxjb24tNSIsImV4cCI6MTc1NjIwNTkwMn0.QgKjXMS4ZP4FAFjB0vllS9EwinCdwqABKsEJ-BzWwpQ";
+    // ⚠️ Replace with your real session URL from backend
+    const sessionUrl = "https://magic.veriff.me/v/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NTU2MDExMDIsInNlc3Npb25faWQiOiI1Yzk1YmRlZC1hZjNhLTRlMDctYmY1OC1lMzZmYjY5MWQ5ZmQiLCJpaWQiOiJlYzVkYzk0Yi05MWExLTQ4YTQtYjRjNS1jY2E5YTg4MjYyNGEiLCJ2aWQiOiI5ZDJhZjc4ZS1iMWMyLTQ0OTktOWY1NS0zYWVmNzNjMWI2ZWYiLCJjaWQiOiJmYWxjb24tNSIsImV4cCI6MTc1NjIwNTkwMn0.QgKjXMS4ZP4FAFjB0vllS9EwinCdwqABKsEJ-BzWwpQ";
 
-    // ✅ Reuse session from storage OR fallback to fresh session
-    const sessionUrl = sessionStorage.getItem('@veriff-session-url') || freshSessionUrl;
-
-    // Save session URL for next reloads
+    // Save session for reloads
     sessionStorage.setItem('@veriff-session-url', sessionUrl);
 
     // ✅ Create Veriff frame
@@ -42,35 +43,30 @@
         rootElementID: 'embedded-container'
       },
 
-      // 🔄 Safari fix: re-request permissions
+      // Reload page if Veriff asks for reload (Safari fixes etc.)
       onReload: () => {
         console.log("onReload triggered — refreshing page...");
         window.location.reload();
       },
 
-      // 🎯 Handle user actions
+      // Capture Veriff events
       onEvent: (msg) => {
         console.log("Veriff event:", msg);
 
+        // 🔄 If user presses "Exit" → CANCEL event → reload page
         if (msg.event === "CANCEL") {
-          console.log("User canceled → reloading page...");
+          console.log("User exited verification — reloading...");
           window.location.reload();
         }
 
+        // ✅ Reload also when finished
         if (msg.event === "FINISHED") {
-          console.log("Verification finished → reloading page...");
+          console.log("Verification finished — reloading...");
           window.location.reload();
         }
       }
     });
-
-    // Optional: Example of manual close + reload after 2 minutes
-    // setTimeout(() => {
-    //   veriffFrame.close();
-    //   window.location.reload();
-    // }, 120000);
   </script>
 
 </body>
 </html>
-
