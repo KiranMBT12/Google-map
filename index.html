@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Veriff Iframe</title>
+  <title>Veriff Embedded</title>
   
   <!-- ✅ Veriff needs these permissions -->
   <meta http-equiv="Content-Security-Policy"
@@ -22,29 +22,34 @@
       width: 100%;
       height: 100%;
     }
-    #veriff-frame {
-      width: 100%;
-      height: 100%;
-      border: none;
+    #embedded-container {
+      width: 800px;   /* 👈 recommended minimum size: 600x680 */
+      height: 800px;
+      border: 1px solid #ccc;
+      margin: auto;
     }
   </style>
+  
+  <!-- ✅ Load Veriff SDK -->
+  <script src="https://cdn.veriff.me/sdk/js/latest/veriff.js"></script>
 </head>
 <body>
 
-  <!-- 🔑 Iframe that loads Veriff -->
-  <iframe
-    id="veriff-frame"
-    allow="camera; microphone; fullscreen; autoplay; clipboard-write"
-    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation"
-  ></iframe>
+  <!-- 🔑 This is where Veriff will be embedded -->
+  <div id="embedded-container"></div>
 
   <script>
     // ⚠️ Replace this with your real session token from backend API
-    const sessionToken = "YOUR_FRESH_SESSION_TOKEN";
+    const sessionToken = "https://magic.veriff.me/v/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NTU2MDExMDIsInNlc3Npb25faWQiOiI1Yzk1YmRlZC1hZjNhLTRlMDctYmY1OC1lMzZmYjY5MWQ5ZmQiLCJpaWQiOiJlYzVkYzk0Yi05MWExLTQ4YTQtYjRjNS1jY2E5YTg4MjYyNGEiLCJ2aWQiOiI5ZDJhZjc4ZS1iMWMyLTQ0OTktOWY1NS0zYWVmNzNjMWI2ZWYiLCJjaWQiOiJmYWxjb24tNSIsImV4cCI6MTc1NjIwNTkwMn0.QgKjXMS4ZP4FAFjB0vllS9EwinCdwqABKsEJ-BzWwpQ";
 
-    // Set iframe source dynamically
-    document.getElementById("veriff-frame").src = 
-      `https://magic.veriff.me/v/${sessionToken}`;
+    // ✅ Create Veriff embedded frame
+    const veriffFrame = createVeriffFrame({
+      url: `https://magic.veriff.me/v/${sessionToken}`,
+      embedded: true,
+      embeddedOptions: {
+        rootElementID: 'embedded-container'
+      }
+    });
   </script>
 
 </body>
