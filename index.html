@@ -31,7 +31,7 @@
 
   <script>
     // ⚠️ Replace with your real session URL from backend
-    const sessionUrl = "https://alchemy.veriff.com/v/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NTU2MDM0NTAsInNlc3Npb25faWQiOiI1OWYzMWUxNS1hYTkzLTQxMjAtOWJmOC02NTQ5MjE5OTIxYzgiLCJpaWQiOiJlYzVkYzk0Yi05MWExLTQ4YTQtYjRjNS1jY2E5YTg4MjYyNGEiLCJ2aWQiOiI5ZDJhZjc4ZS1iMWMyLTQ0OTktOWY1NS0zYWVmNzNjMWI2ZWYiLCJjaWQiOiJzYWFzLTQiLCJleHAiOjE3NTYyMDgyNTB9.Rd-EVIvdmObAuX715kUNUUgHwWkmBXi0yxuNmj1xE9M";
+    const sessionUrl = "https://magic.veriff.me/v/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NTU2MDExMDIsInNlc3Npb25faWQiOiI1Yzk1YmRlZC1hZjNhLTRlMDctYmY1OC1lMzZmYjY5MWQ5ZmQiLCJpaWQiOiJlYzVkYzk0Yi05MWExLTQ4YTQtYjRjNS1jY2E5YTg4MjYyNGEiLCJ2aWQiOiI5ZDJhZjc4ZS1iMWMyLTQ0OTktOWY1NS0zYWVmNzNjMWI2ZWYiLCJjaWQiOiJmYWxjb24tNSIsImV4cCI6MTc1NjIwNTkwMn0.QgKjXMS4ZP4FAFjB0vllS9EwinCdwqABKsEJ-BzWwpQ";
 
     // ✅ Use window.veriffSDK to create the frame
     window.veriffSDK.createVeriffFrame({
@@ -42,10 +42,14 @@
       },
       onEvent: function (msg) {
         console.log("Veriff event:", msg);
+
+        // 🔄 Reload if user closes or exits the SDK
+        if (msg && msg.event === "CANCEL") {
+          location.reload();
+        }
       }
     });
   </script>
 
 </body>
 </html>
-
