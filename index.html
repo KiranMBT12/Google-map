@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>WebRTC Video Call (Local PeerServer)</title>
+  <title>WebRTC Video Call (PeerJS Cloud)</title>
   <style>
     body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
     video { width: 45%; margin: 10px; border-radius: 8px; background: black; }
@@ -11,7 +11,7 @@
   </style>
 </head>
 <body>
-  <h2>WebRTC Video Call (Local PeerServer)</h2>
+  <h2>WebRTC Video Call (PeerJS Cloud)</h2>
 
   <p>Your ID: <span id="myId">Loading...</span></p>
   <input id="remoteId" type="text" placeholder="Enter friend's ID">
@@ -23,6 +23,7 @@
     <video id="remoteVideo" autoplay playsinline></video>
   </div>
 
+  <!-- PeerJS library -->
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <script>
     const localVideo = document.getElementById("localVideo");
@@ -33,14 +34,15 @@
     let localStream;
     let currentCall;
 
-    // Connect to the local PeerServer
+    // Connect to PeerJS Cloud (works across the internet)
     const peer = new Peer({
-      host: "localhost",
-      port: 9000,
-      path: "/"
+      host: "peerjs.com",
+      port: 443,
+      secure: true,
+      key: "peerjs"
     });
 
-    // Show our own ID
+    // Show your peer ID
     peer.on("open", id => {
       myIdSpan.textContent = id;
     });
@@ -53,7 +55,7 @@
             localStream = stream;
             localVideo.srcObject = stream;
 
-            call.answer(stream); // Answer with own stream
+            call.answer(stream); // Answer with local stream
             currentCall = call;
 
             call.on("stream", remoteStream => {
