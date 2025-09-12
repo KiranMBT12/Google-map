@@ -2,137 +2,36 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>WebRTC Video Call with QR</title>
+  <title>WebRTC Video Call (Daily.co)</title>
   <style>
     body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
-    video { width: 45%; margin: 10px; border-radius: 8px; background: black; }
-    #qrcode, #answerQR { margin: 10px auto; }
-    button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    iframe { width: 80%; height: 500px; border: 1px solid #ccc; border-radius: 8px; }
+    input, button { padding: 10px; margin: 5px; }
   </style>
 </head>
 <body>
-  <h2>WebRTC Video Call with QR</h2>
+  <h2>Video Call using Daily.co</h2>
 
-  <div>
-    <video id="localVideo" autoplay playsinline muted></video>
-    <video id="remoteVideo" autoplay playsinline></video>
-  </div>
+  <input id="roomName" type="text" placeholder="Enter room name">
+  <button onclick="joinRoom()">Join Room</button>
 
-  <h3>Caller</h3>
-  <button onclick="createOffer()">Create Offer</button>
-  <div id="qrcode"></div>
-
-  <h3>Receiver</h3>
-  <input type="file" id="scanOffer" accept="image/*">
-  <button onclick="createAnswer()">Create Answer</button>
-  <div id="answerQR"></div>
-
-  <h3>Caller Scan Answer</h3>
-  <input type="file" id="scanAnswer" accept="image/*">
-  <button onclick="finishConnection()">Connect</button>
-
-  <!-- QR library -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <div id="roomContainer"></div>
 
   <script>
-    const localVideo = document.getElementById("localVideo");
-    const remoteVideo = document.getElementById("remoteVideo");
-    const qrcodeDiv = document.getElementById("qrcode");
-    const answerQRDiv = document.getElementById("answerQR");
-    const scanOfferInput = document.getElementById("scanOffer");
-    const scanAnswerInput = document.getElementById("scanAnswer");
+    function joinRoom() {
+      const roomName = document.getElementById("roomName").value.trim();
+      if (!roomName) return alert("Enter a room name");
 
-    let pc, localStream;
-    let remoteOfferSDP, remoteAnswerSDP;
+      const roomUrl = `https://trydaily.co/${roomName}`;
+      const container = document.getElementById("roomContainer");
 
-    const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+      // Remove previous iframe if any
+      container.innerHTML = '';
 
-    async function initStream() {
-      if (!localStream) {
-        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        localVideo.srcObject = localStream;
-      }
-    }
-
-    // ====== Caller: Create Offer ======
-    async function createOffer() {
-      await initStream();
-      pc = new RTCPeerConnection(config);
-      localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-      pc.ontrack = e => remoteVideo.srcObject = e.streams[0];
-
-      pc.onicecandidate = () => {
-        if (pc.localDescription) {
-          // Generate QR code for the offer
-          QRCode.toCanvas(qrcodeDiv, JSON.stringify(pc.localDescription), { width: 300 });
-        }
-      };
-
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-    }
-
-    // ====== Receiver: Load Offer and Create Answer ======
-    scanOfferInput.addEventListener("change", async (event) => {
-      const file = event.target.files[0];
-      const img = new Image();
-      img.src = URL.createObjectURL(file);
-      img.onload = async () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.width; canvas.height = img.height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0);
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(imageData.data, canvas.width, canvas.height);
-        if (code) {
-          remoteOfferSDP = JSON.parse(code.data);
-          alert("Offer scanned successfully!");
-        } else alert("Could not read QR code");
-      };
-    });
-
-    async function createAnswer() {
-      if (!remoteOfferSDP) return alert("Scan the offer QR first!");
-      await initStream();
-      pc = new RTCPeerConnection(config);
-      localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-      pc.ontrack = e => remoteVideo.srcObject = e.streams[0];
-
-      await pc.setRemoteDescription(new RTCSessionDescription(remoteOfferSDP));
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-
-      pc.onicecandidate = () => {
-        if (pc.localDescription) {
-          QRCode.toCanvas(answerQRDiv, JSON.stringify(pc.localDescription), { width: 300 });
-        }
-      };
-    }
-
-    // ====== Caller: Scan Answer QR and Finish ======
-    scanAnswerInput.addEventListener("change", async (event) => {
-      const file = event.target.files[0];
-      const img = new Image();
-      img.src = URL.createObjectURL(file);
-      img.onload = async () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.width; canvas.height = img.height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0);
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(imageData.data, canvas.width, canvas.height);
-        if (code) {
-          remoteAnswerSDP = JSON.parse(code.data);
-          alert("Answer scanned successfully!");
-        } else alert("Could not read QR code");
-      };
-    });
-
-    async function finishConnection() {
-      if (!remoteAnswerSDP || !pc) return alert("Scan answer QR first!");
-      await pc.setRemoteDescription(new RTCSessionDescription(remoteAnswerSDP));
-      alert("Connection established!");
+      const iframe = document.createElement('iframe');
+      iframe.src = roomUrl + "?embed=true";
+      iframe.allow = "camera; microphone; fullscreen; display-capture";
+      container.appendChild(iframe);
     }
   </script>
 </body>
