@@ -1,117 +1,92 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>WebRTC Video Call</title>
+  <meta charset="UTF-8">
+  <title>WebRTC P2P Demo (No Server)</title>
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 20px; }
-    video { width: 45%; margin: 10px; border-radius: 10px; background: black; }
-    #controls { margin: 20px; }
-    button { padding: 10px 20px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; }
-    button:hover { background: #ddd; }
-    #incoming { display: none; margin-top: 20px; }
+    body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+    video { width: 45%; margin: 10px; border-radius: 8px; background: black; }
+    textarea { width: 90%; height: 100px; margin: 10px 0; }
+    button { padding: 10px 20px; margin: 5px; cursor: pointer; }
   </style>
 </head>
 <body>
-  <h2>WebRTC Video & Voice Call</h2>
+  <h2>WebRTC Video Call (No Server)</h2>
+
   <div>
     <video id="localVideo" autoplay playsinline muted></video>
     <video id="remoteVideo" autoplay playsinline></video>
   </div>
-  <div id="controls">
-    <button onclick="startCall()">Start Call</button>
-  </div>
-  <div id="incoming">
-    <p>📞 Incoming Call...</p>
-    <button onclick="acceptCall()">Accept</button>
-    <button onclick="rejectCall()">Reject</button>
-  </div>
+
+  <h3>Caller</h3>
+  <button onclick="createOffer()">Create Offer</button>
+  <textarea id="offerBox" placeholder="Offer will appear here"></textarea>
+
+  <h3>Receiver</h3>
+  <textarea id="remoteOffer" placeholder="Paste offer here"></textarea><br>
+  <button onclick="createAnswer()">Create Answer</button>
+  <textarea id="answerBox" placeholder="Answer will appear here"></textarea>
+
+  <h3>Caller Paste Answer</h3>
+  <textarea id="remoteAnswer" placeholder="Paste answer here"></textarea><br>
+  <button onclick="addAnswer()">Connect</button>
 
   <script>
     const localVideo = document.getElementById("localVideo");
     const remoteVideo = document.getElementById("remoteVideo");
-    const incomingDiv = document.getElementById("incoming");
+    let pc, localStream;
 
-    let localStream;
-    let peerConnection;
-    let pendingOffer = null;
+    const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
-    const config = {
-      iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
-    };
-
-    // Simple public signaling server (replace with your own later)
-    const signalingServer = new WebSocket("wss://websocket-echo.com"); 
-
-    signalingServer.onmessage = async (msg) => {
-      const data = JSON.parse(msg.data);
-
-      if (data.offer) {
-        // Show incoming call popup
-        pendingOffer = data.offer;
-        incomingDiv.style.display = "block";
-      } else if (data.answer && peerConnection) {
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-      } else if (data.candidate && peerConnection) {
-        try {
-          await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-        } catch (e) {
-          console.error("Error adding received ice candidate", e);
-        }
+    async function initStream() {
+      if (!localStream) {
+        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        localVideo.srcObject = localStream;
       }
-    };
-
-    async function startCall() {
-      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      localVideo.srcObject = localStream;
-
-      peerConnection = createPeerConnection();
-
-      localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-
-      const offer = await peerConnection.createOffer();
-      await peerConnection.setLocalDescription(offer);
-
-      signalingServer.send(JSON.stringify({ offer }));
     }
 
-    async function acceptCall() {
-      incomingDiv.style.display = "none";
-      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      localVideo.srcObject = localStream;
+    async function createOffer() {
+      await initStream();
+      pc = new RTCPeerConnection(config);
 
-      peerConnection = createPeerConnection();
+      // Add local tracks
+      localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
 
-      localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+      // Show remote video
+      pc.ontrack = (e) => { remoteVideo.srcObject = e.streams[0]; };
 
-      await peerConnection.setRemoteDescription(new RTCSessionDescription(pendingOffer));
-      const answer = await peerConnection.createAnswer();
-      await peerConnection.setLocalDescription(answer);
-
-      signalingServer.send(JSON.stringify({ answer }));
-      pendingOffer = null;
-    }
-
-    function rejectCall() {
-      incomingDiv.style.display = "none";
-      pendingOffer = null;
-    }
-
-    function createPeerConnection() {
-      const pc = new RTCPeerConnection(config);
-
-      pc.ontrack = (event) => {
-        remoteVideo.srcObject = event.streams[0];
+      // ICE candidate gathering
+      pc.onicecandidate = () => {
+        document.getElementById("offerBox").value = JSON.stringify(pc.localDescription);
       };
 
-      pc.onicecandidate = (event) => {
-        if (event.candidate) {
-          signalingServer.send(JSON.stringify({ candidate: event.candidate }));
-        }
-      };
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+    }
 
-      return pc;
+    async function createAnswer() {
+      await initStream();
+      pc = new RTCPeerConnection(config);
+
+      localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+      pc.ontrack = (e) => { remoteVideo.srcObject = e.streams[0]; };
+
+      const remoteOffer = JSON.parse(document.getElementById("remoteOffer").value);
+      await pc.setRemoteDescription(new RTCSessionDescription(remoteOffer));
+
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+
+      pc.onicecandidate = () => {
+        document.getElementById("answerBox").value = JSON.stringify(pc.localDescription);
+      };
+    }
+
+    async function addAnswer() {
+      const remoteAnswer = JSON.parse(document.getElementById("remoteAnswer").value);
+      if (!pc.currentRemoteDescription) {
+        await pc.setRemoteDescription(new RTCSessionDescription(remoteAnswer));
+      }
     }
   </script>
 </body>
