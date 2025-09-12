@@ -1,73 +1,138 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Veriff Embedded</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ZEGOCLOUD Video Call Demo</title>
 
-  <!-- ✅ Load Veriff InContext SDK -->
-  <script src="https://cdn.veriff.me/incontext/js/v1/veriff.js"></script>
+  <!-- Load the correct ZEGOCLOUD Web SDK -->
+<script src="https://cdn.zegocloud.com/libs/zego-express-web/2.26.0/ZegoExpressWebRTC.js"></script>
+
 
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+    #videos {
       display: flex;
       justify-content: center;
-      align-items: center;
+      gap: 20px;
+      margin: 20px 0;
     }
-    #embedded-container {
-      width: 800px;
-      height: 800px;
-      border: 1px solid #ccc;
+    .video-box {
+      width: 320px;
+      height: 240px;
+      border: 2px solid #333;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      border: none;
+      border-radius: 8px;
+      background-color: #007bff;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
     }
   </style>
 </head>
 <body>
-
-  <div id="embedded-container"></div>
+  <h1>My First ZEGOCLOUD Video Call</h1>
+  <div id="videos">
+    <div id="local-video" class="video-box"></div>
+    <div id="remote-video" class="video-box"></div>
+  </div>
+  <button id="startButton">Start Call</button>
+  <button id="endButton" disabled>End Call</button>
 
   <script>
-    // ⚠️ Replace with your real session URL from backend
-    const sessionUrl = "https://magic.veriff.me/v/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NTU2MDExMDIsInNlc3Npb25faWQiOiI1Yzk1YmRlZC1hZjNhLTRlMDctYmY1OC1lMzZmYjY5MWQ5ZmQiLCJpaWQiOiJlYzVkYzk0Yi05MWExLTQ4YTQtYjRjNS1jY2E5YTg4MjYyNGEiLCJ2aWQiOiI5ZDJhZjc4ZS1iMWMyLTQ0OTktOWY1NS0zYWVmNzNjMWI2ZWYiLCJjaWQiOiJmYWxjb24tNSIsImV4cCI6MTc1NjIwNTkwMn0.QgKjXMS4ZP4FAFjB0vllS9EwinCdwqABKsEJ-BzWwpQ";
+    // Replace with your actual values from ZEGOCLOUD Console
+    const appID = 1473756636;   // Your AppID
+    const server = "wss://webliveroom-test.zegocloud.com/ws";
+    const userID = "user_" + Math.floor(Math.random() * 10000);
+    const userName = "User_" + Math.floor(Math.random() * 1000);
+    const roomID = "demoRoom";  // Both callers must use the same roomID
 
-    // Save session for reloads
-    sessionStorage.setItem('@veriff-session-url', sessionUrl);
+    const token = "04AAAAAGjFV/8ADHCD7+u5uu2ne7IpNgCs3nkMkL2VPp5Sac+v+0i97rtjug+4tsGljyq3d1Pc5xTCCJtmpI+4UnAIPBz0RnAWwG/sujO4/WP04F4GQyZiOzAFxcAkXDG8ljoY2D0Xzsa/SrsgwwdZotNMevoJ7qoZBGyTgKtGlPtAV7JjLvL4mNy+kxejKoy4DlApegk8d32kGQb+t6W54Tg+76Dg2WKZaDxXwkYnFoqKcxEN27kXdjY4RKJoJeEBz6/jfwE=";  // Generate from console
 
-    // ✅ Create Veriff frame
-    const veriffFrame = window.veriffSDK.createVeriffFrame({
-      url: sessionUrl,
-      embedded: true,
-      embeddedOptions: {
-        rootElementID: 'embedded-container'
-      },
+    let zg; 
+    let localStream;
 
-      // Reload page if Veriff asks for reload (Safari fixes etc.)
-      onReload: () => {
-        console.log("onReload triggered — refreshing page...");
-        window.location.reload();
-      },
+    document.getElementById("startButton").addEventListener("click", startCall);
+    document.getElementById("endButton").addEventListener("click", endCall);
 
-      // Capture Veriff events
-      onEvent: (msg) => {
-        console.log("Veriff event:", msg);
-          window.location.reload();
-        // 🔄 If user presses "Exit" → CANCEL event → reload page
-        if (msg.event === "CANCEL") {
-          console.log("User exited verification — reloading...");
-          window.location.reload();
-        }
-
-        // ✅ Reload also when finished
-        if (msg.event === "FINISHED") {
-          console.log("Verification finished — reloading...");
-          window.location.reload();
-        }
+    async function startCall() {
+      if (typeof ZegoExpressEngine === "undefined") {
+        alert("Zego SDK not loaded. Cannot start call.");
+        return;
       }
-    });
-  </script>
 
+      zg = new ZegoExpressEngine(appID, server);
+
+      try {
+        await zg.loginRoom(roomID, token, { userID, userName });
+
+        localStream = await zg.createStream({ camera: { audio: true, video: true } });
+        const localVideoDiv = document.getElementById("local-video");
+        localVideoDiv.innerHTML = "";
+        localVideoDiv.appendChild(zg.createLocalStreamView(localStream));
+
+        zg.startPublishingStream("local-stream", localStream);
+
+        zg.on("roomStreamUpdate", async (roomID, updateType, streamList) => {
+          if (updateType === "ADD") {
+            // Could be multiple streams added
+            for (let stream of streamList) {
+              if (stream.streamID !== "local-stream") {
+                const remoteVideoDiv = document.getElementById("remote-video");
+                remoteVideoDiv.innerHTML = "";
+                const remoteStream = await zg.startPlayingStream(stream.streamID);
+                remoteVideoDiv.appendChild(zg.createRemoteStreamView(remoteStream));
+              }
+            }
+          }
+        });
+
+        document.getElementById("startButton").disabled = true;
+        document.getElementById("endButton").disabled = false;
+      } catch (err) {
+        console.error("Error starting call:", err);
+        alert("Failed to start call: " + err.message);
+      }
+    }
+
+    async function endCall() {
+      if (!zg) return;
+      try {
+        zg.stopPublishingStream("local-stream");
+        if (localStream) {
+          zg.destroyStream(localStream);
+        }
+        await zg.logoutRoom(roomID);
+
+        document.getElementById("local-video").innerHTML = "";
+        document.getElementById("remote-video").innerHTML = "";
+
+        document.getElementById("startButton").disabled = false;
+        document.getElementById("endButton").disabled = true;
+
+        alert("Call ended");
+      } catch (err) {
+        console.error("Error ending call:", err);
+      }
+    }
+  </script>
 </body>
 </html>
-
