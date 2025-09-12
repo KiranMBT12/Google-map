@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>WebRTC Video Call (PeerJS Cloud)</title>
+  <title>WebRTC Video Call (PeerJS)</title>
   <style>
     body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
     video { width: 45%; margin: 10px; border-radius: 8px; background: black; }
@@ -11,7 +11,7 @@
   </style>
 </head>
 <body>
-  <h2>WebRTC Video Call (PeerJS Cloud)</h2>
+  <h2>WebRTC Video Call (PeerJS)</h2>
 
   <p>Your ID: <span id="myId">Loading...</span></p>
   <input id="remoteId" type="text" placeholder="Enter friend's ID">
@@ -34,12 +34,13 @@
     let localStream;
     let currentCall;
 
-    // Connect to PeerJS Cloud (works across the internet)
+    // Connect to PeerJS server (0.peerjs.com free server)
     const peer = new Peer({
-      host: "peerjs.com",
+      host: '0.peerjs.com',
       port: 443,
+      path: '/',
       secure: true,
-      key: "peerjs"
+      key: 'peerjs'
     });
 
     // Show your peer ID
