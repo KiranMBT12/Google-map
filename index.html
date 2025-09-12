@@ -2,109 +2,90 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>WebRTC Video Call (PeerJS)</title>
+  <title>WebRTC P2P Demo (No Server)</title>
   <style>
     body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
     video { width: 45%; margin: 10px; border-radius: 8px; background: black; }
-    input, button { padding: 10px; margin: 5px; }
-    #remoteId { width: 250px; }
+    textarea { width: 90%; height: 100px; margin: 10px 0; }
+    button { padding: 10px 20px; margin: 5px; cursor: pointer; }
   </style>
 </head>
 <body>
-  <h2>WebRTC Video Call (PeerJS)</h2>
-
-  <p>Your ID: <span id="myId">Loading...</span></p>
-  <input id="remoteId" type="text" placeholder="Enter friend's ID">
-  <button onclick="startCall()">Start Call</button>
-  <button onclick="hangUp()">Hang Up</button>
+  <h2>WebRTC Video Call (No Server)</h2>
 
   <div>
     <video id="localVideo" autoplay playsinline muted></video>
     <video id="remoteVideo" autoplay playsinline></video>
   </div>
 
-  <!-- PeerJS library -->
-  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <h3>Caller</h3>
+  <button onclick="createOffer()">Create Offer</button>
+  <textarea id="offerBox" placeholder="Offer will appear here"></textarea>
+
+  <h3>Receiver</h3>
+  <textarea id="remoteOffer" placeholder="Paste offer here"></textarea><br>
+  <button onclick="createAnswer()">Create Answer</button>
+  <textarea id="answerBox" placeholder="Answer will appear here"></textarea>
+
+  <h3>Caller Paste Answer</h3>
+  <textarea id="remoteAnswer" placeholder="Paste answer here"></textarea><br>
+  <button onclick="addAnswer()">Connect</button>
+
   <script>
     const localVideo = document.getElementById("localVideo");
     const remoteVideo = document.getElementById("remoteVideo");
-    const myIdSpan = document.getElementById("myId");
-    const remoteIdInput = document.getElementById("remoteId");
+    let pc, localStream;
 
-    let localStream;
-    let currentCall;
+    const config = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
-    // Connect to PeerJS server (0.peerjs.com free server)
-    const peer = new Peer({
-      host: '0.peerjs.com',
-      port: 443,
-      path: '/',
-      secure: true,
-      key: 'peerjs'
-    });
-
-    // Show your peer ID
-    peer.on("open", id => {
-      myIdSpan.textContent = id;
-    });
-
-    // Handle incoming calls
-    peer.on("call", call => {
-      if (confirm("📞 Incoming call from " + call.peer + ". Accept?")) {
-        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-          .then(stream => {
-            localStream = stream;
-            localVideo.srcObject = stream;
-
-            call.answer(stream); // Answer with local stream
-            currentCall = call;
-
-            call.on("stream", remoteStream => {
-              remoteVideo.srcObject = remoteStream;
-            });
-
-            call.on("close", () => {
-              alert("Call ended");
-              remoteVideo.srcObject = null;
-            });
-          })
-          .catch(err => alert("Error accessing camera/microphone: " + err));
-      } else {
-        call.close();
+    async function initStream() {
+      if (!localStream) {
+        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        localVideo.srcObject = localStream;
       }
-    });
-
-    // Start a call
-    function startCall() {
-      const remoteId = remoteIdInput.value.trim();
-      if (!remoteId) return alert("Enter friend's ID");
-
-      navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-        .then(stream => {
-          localStream = stream;
-          localVideo.srcObject = stream;
-
-          const call = peer.call(remoteId, stream);
-          currentCall = call;
-
-          call.on("stream", remoteStream => {
-            remoteVideo.srcObject = remoteStream;
-          });
-
-          call.on("close", () => {
-            alert("Call ended");
-            remoteVideo.srcObject = null;
-          });
-        })
-        .catch(err => alert("Error accessing camera/microphone: " + err));
     }
 
-    // Hang up the current call
-    function hangUp() {
-      if (currentCall) {
-        currentCall.close();
-        currentCall = null;
-        remoteVideo.srcObject = null;
+    async function createOffer() {
+      await initStream();
+      pc = new RTCPeerConnection(config);
+
+      // Add local tracks
+      localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+      // Show remote video
+      pc.ontrack = (e) => { remoteVideo.srcObject = e.streams[0]; };
+
+      // ICE candidate gathering
+      pc.onicecandidate = () => {
+        document.getElementById("offerBox").value = JSON.stringify(pc.localDescription);
+      };
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+    }
+
+    async function createAnswer() {
+      await initStream();
+      pc = new RTCPeerConnection(config);
+
+      localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+      pc.ontrack = (e) => { remoteVideo.srcObject = e.streams[0]; };
+
+      const remoteOffer = JSON.parse(document.getElementById("remoteOffer").value);
+      await pc.setRemoteDescription(new RTCSessionDescription(remoteOffer));
+
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+
+      pc.onicecandidate = () => {
+        document.getElementById("answerBox").value = JSON.stringify(pc.localDescription);
+      };
+    }
+
+    async function addAnswer() {
+      const remoteAnswer = JSON.parse(document.getElementById("remoteAnswer").value);
+      if (!pc.currentRemoteDescription) {
+        await pc.setRemoteDescription(new RTCSessionDescription(remoteAnswer));
       }
     }
   </script>
