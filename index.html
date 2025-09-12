@@ -10,6 +10,7 @@
     #controls { margin: 20px; }
     button { padding: 10px 20px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; }
     button:hover { background: #ddd; }
+    #incoming { display: none; margin-top: 20px; }
   </style>
 </head>
 <body>
@@ -21,30 +22,38 @@
   <div id="controls">
     <button onclick="startCall()">Start Call</button>
   </div>
+  <div id="incoming">
+    <p>📞 Incoming Call...</p>
+    <button onclick="acceptCall()">Accept</button>
+    <button onclick="rejectCall()">Reject</button>
+  </div>
 
   <script>
     const localVideo = document.getElementById("localVideo");
     const remoteVideo = document.getElementById("remoteVideo");
+    const incomingDiv = document.getElementById("incoming");
 
     let localStream;
     let peerConnection;
+    let pendingOffer = null;
 
-    // Free STUN server (for NAT traversal)
     const config = {
       iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
     };
 
-    // Simple signaling server using WebSocket (replace with your own in production)
+    // Simple public signaling server (replace with your own later)
     const signalingServer = new WebSocket("wss://websocket-echo.com"); 
 
     signalingServer.onmessage = async (msg) => {
       const data = JSON.parse(msg.data);
 
       if (data.offer) {
-        await createAnswer(data.offer);
-      } else if (data.answer) {
+        // Show incoming call popup
+        pendingOffer = data.offer;
+        incomingDiv.style.display = "block";
+      } else if (data.answer && peerConnection) {
         await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-      } else if (data.candidate) {
+      } else if (data.candidate && peerConnection) {
         try {
           await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
         } catch (e) {
@@ -57,52 +66,52 @@
       localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       localVideo.srcObject = localStream;
 
-      peerConnection = new RTCPeerConnection(config);
+      peerConnection = createPeerConnection();
 
-      // Add local stream tracks
       localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
 
-      // Remote stream
-      peerConnection.ontrack = (event) => {
-        remoteVideo.srcObject = event.streams[0];
-      };
-
-      // Send ICE candidates
-      peerConnection.onicecandidate = (event) => {
-        if (event.candidate) {
-          signalingServer.send(JSON.stringify({ candidate: event.candidate }));
-        }
-      };
-
-      // Create an offer
       const offer = await peerConnection.createOffer();
       await peerConnection.setLocalDescription(offer);
 
       signalingServer.send(JSON.stringify({ offer }));
     }
 
-    async function createAnswer(offer) {
-      peerConnection = new RTCPeerConnection(config);
+    async function acceptCall() {
+      incomingDiv.style.display = "none";
+      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      localVideo.srcObject = localStream;
 
-      peerConnection.ontrack = (event) => {
+      peerConnection = createPeerConnection();
+
+      localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+      await peerConnection.setRemoteDescription(new RTCSessionDescription(pendingOffer));
+      const answer = await peerConnection.createAnswer();
+      await peerConnection.setLocalDescription(answer);
+
+      signalingServer.send(JSON.stringify({ answer }));
+      pendingOffer = null;
+    }
+
+    function rejectCall() {
+      incomingDiv.style.display = "none";
+      pendingOffer = null;
+    }
+
+    function createPeerConnection() {
+      const pc = new RTCPeerConnection(config);
+
+      pc.ontrack = (event) => {
         remoteVideo.srcObject = event.streams[0];
       };
 
-      localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      localVideo.srcObject = localStream;
-      localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-
-      peerConnection.onicecandidate = (event) => {
+      pc.onicecandidate = (event) => {
         if (event.candidate) {
           signalingServer.send(JSON.stringify({ candidate: event.candidate }));
         }
       };
 
-      await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-      const answer = await peerConnection.createAnswer();
-      await peerConnection.setLocalDescription(answer);
-
-      signalingServer.send(JSON.stringify({ answer }));
+      return pc;
     }
   </script>
 </body>
