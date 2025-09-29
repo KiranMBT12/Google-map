@@ -2,45 +2,120 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>WebRTC Video Call with Jitsi</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto Multilingual App</title>
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
-    #jitsi-container { width: 80%; height: 500px; margin: 20px auto; border: 1px solid #ccc; border-radius: 8px; }
-    input, button { padding: 10px; margin: 5px; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f9;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: white;
+      padding: 20px 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      text-align: center;
+      max-width: 400px;
+    }
+    select {
+      margin: 10px;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    h1 {
+      color: #333;
+    }
+    p {
+      color: #555;
+    }
+    button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      border: none;
+      background: #007bff;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
   </style>
 </head>
 <body>
-  <h2>Video Call using Jitsi Meet</h2>
+  <div class="container">
+    <select id="languageSwitcher"></select>
 
-  <input id="roomName" type="text" placeholder="Enter room name">
-  <button onclick="joinRoom()">Join Room</button>
+    <h1 id="title">Welcome</h1>
+    <p id="description">This is a multilingual app example.</p>
+    <button id="buttonText">Click Me</button>
+  </div>
 
-  <div id="jitsi-container"></div>
-
-  <script src="https://meet.jit.si/external_api.js"></script>
   <script>
-    let api = null;
+    const apiUrl = "https://libretranslate.de"; // Free public API (no key needed)
 
-    function joinRoom() {
-      const room = document.getElementById("roomName").value.trim();
-      if (!room) return alert("Enter a room name");
+    const switcher = document.getElementById("languageSwitcher");
+    const elementsToTranslate = {
+      title: document.getElementById("title"),
+      description: document.getElementById("description"),
+      buttonText: document.getElementById("buttonText")
+    };
 
-      const container = document.getElementById("jitsi-container");
-      container.innerHTML = ""; // Clear previous iframe
+    // Load all languages into dropdown
+    async function loadLanguages() {
+      const res = await fetch(`${apiUrl}/languages`);
+      const langs = await res.json();
 
-      const domain = "meet.jit.si";
-      const options = {
-        roomName: room,
-        parentNode: container,
-        width: '100%',
-        height: 500,
-        interfaceConfigOverwrite: {
-          TOOLBAR_BUTTONS: ['microphone', 'camera', 'hangup', 'fullscreen']
-        }
-      };
-
-      api = new JitsiMeetExternalAPI(domain, options);
+      langs.forEach(lang => {
+        const option = document.createElement("option");
+        option.value = lang.code;
+        option.textContent = lang.name;
+        switcher.appendChild(option);
+      });
     }
+
+    // Translate function
+    async function translatePage(lang) {
+      for (const key in elementsToTranslate) {
+        const el = elementsToTranslate[key];
+        const text = el.getAttribute("data-original") || el.textContent;
+
+        // Save original text
+        if (!el.getAttribute("data-original")) {
+          el.setAttribute("data-original", text);
+        }
+
+        // Fetch translation
+        const res = await fetch(`${apiUrl}/translate`, {
+          method: "POST",
+          body: JSON.stringify({
+            q: text,
+            source: "en",
+            target: lang,
+            format: "text"
+          }),
+          headers: { "Content-Type": "application/json" }
+        });
+
+        const data = await res.json();
+        el.textContent = data.translatedText;
+      }
+    }
+
+    // Event listener
+    switcher.addEventListener("change", e => {
+      translatePage(e.target.value);
+    });
+
+    // Init
+    loadLanguages();
   </script>
 </body>
 </html>
