@@ -3,119 +3,222 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Auto Multilingual App</title>
+  <title>Voice Input Form</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       background: #f4f4f9;
       display: flex;
-      flex-direction: column;
-      align-items: center;
       justify-content: center;
-      height: 100vh;
-      margin: 0;
+      align-items: flex-start;
+      padding: 20px;
     }
     .container {
-      background: white;
-      padding: 20px 40px;
+      background: #fff;
+      padding: 20px;
+      width: 400px;
       border-radius: 12px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      text-align: center;
-      max-width: 400px;
     }
-    select {
-      margin: 10px;
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-top: 12px;
+      font-weight: bold;
+    }
+    input {
+      width: 100%;
       padding: 8px;
-      border-radius: 8px;
+      margin-top: 6px;
+      border-radius: 6px;
       border: 1px solid #ccc;
     }
-    h1 {
-      color: #333;
-    }
-    p {
-      color: #555;
+    .options {
+      display: flex;
+      gap: 15px;
+      margin-top: 6px;
     }
     button {
-      margin-top: 15px;
-      padding: 10px 20px;
-      border: none;
-      background: #007bff;
+      margin-top: 20px;
+      width: 100%;
+      padding: 10px;
+      background: #4cafef;
       color: white;
+      border: none;
       border-radius: 8px;
       cursor: pointer;
+      font-size: 16px;
     }
-    button:hover {
-      background: #0056b3;
+    button:disabled {
+      background: #aaa;
+    }
+    #status {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 14px;
+      color: #555;
+    }
+
+    /* Custom dropdown */
+    .dropdown {
+      position: relative;
+      margin-top: 6px;
+    }
+    .dropdown-toggle {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      cursor: pointer;
+      background: white;
+    }
+    .dropdown-menu {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      display: none;
+      flex-direction: column;
+      z-index: 10;
+    }
+    .dropdown-menu div {
+      padding: 8px;
+      cursor: pointer;
+    }
+    .dropdown-menu div:hover {
+      background: #eee;
+    }
+    .dropdown.open .dropdown-menu {
+      display: flex;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <select id="languageSwitcher"></select>
+    <h2>Voice Input Form</h2>
 
-    <h1 id="title">Welcome</h1>
-    <p id="description">This is a multilingual app example.</p>
-    <button id="buttonText">Click Me</button>
+    <label for="name">Name</label>
+    <input type="text" id="name" placeholder="Say: name John Doe">
+
+    <label for="email">Email</label>
+    <input type="email" id="email" placeholder="Say: email john@example.com">
+
+    <label>Gender</label>
+    <div class="options">
+      <label><input type="radio" name="gender" value="male"> Male</label>
+      <label><input type="radio" name="gender" value="female"> Female</label>
+    </div>
+
+    <label>Interests</label>
+    <div class="options">
+      <label><input type="checkbox" value="sports" id="sports"> Sports</label>
+      <label><input type="checkbox" value="music" id="music"> Music</label>
+    </div>
+
+    <label for="country">Country</label>
+    <div class="dropdown" id="countryDropdown">
+      <div class="dropdown-toggle" id="countryToggle">-- Select --</div>
+      <div class="dropdown-menu">
+        <div data-value="india">India</div>
+        <div data-value="usa">USA</div>
+        <div data-value="uk">UK</div>
+      </div>
+    </div>
+
+    <button id="startBtn">🎤 Start Speaking</button>
+    <div id="status">Press the button and speak commands</div>
   </div>
 
   <script>
-    const apiUrl = "https://libretranslate.de"; // Free public API (no key needed)
+    const startBtn = document.getElementById("startBtn");
+    const statusDiv = document.getElementById("status");
+    const dropdown = document.getElementById("countryDropdown");
+    const toggle = document.getElementById("countryToggle");
 
-    const switcher = document.getElementById("languageSwitcher");
-    const elementsToTranslate = {
-      title: document.getElementById("title"),
-      description: document.getElementById("description"),
-      buttonText: document.getElementById("buttonText")
-    };
-
-    // Load all languages into dropdown
-    async function loadLanguages() {
-      const res = await fetch(`${apiUrl}/languages`);
-      const langs = await res.json();
-
-      langs.forEach(lang => {
-        const option = document.createElement("option");
-        option.value = lang.code;
-        option.textContent = lang.name;
-        switcher.appendChild(option);
-      });
-    }
-
-    // Translate function
-    async function translatePage(lang) {
-      for (const key in elementsToTranslate) {
-        const el = elementsToTranslate[key];
-        const text = el.getAttribute("data-original") || el.textContent;
-
-        // Save original text
-        if (!el.getAttribute("data-original")) {
-          el.setAttribute("data-original", text);
-        }
-
-        // Fetch translation
-        const res = await fetch(`${apiUrl}/translate`, {
-          method: "POST",
-          body: JSON.stringify({
-            q: text,
-            source: "en",
-            target: lang,
-            format: "text"
-          }),
-          headers: { "Content-Type": "application/json" }
-        });
-
-        const data = await res.json();
-        el.textContent = data.translatedText;
-      }
-    }
-
-    // Event listener
-    switcher.addEventListener("change", e => {
-      translatePage(e.target.value);
+    // Dropdown toggle click
+    toggle.addEventListener("click", () => {
+      dropdown.classList.toggle("open");
     });
 
-    // Init
-    loadLanguages();
+    // Dropdown select
+    dropdown.querySelectorAll(".dropdown-menu div").forEach(item => {
+      item.addEventListener("click", () => {
+        toggle.textContent = item.textContent;
+        toggle.dataset.value = item.dataset.value;
+        dropdown.classList.remove("open");
+      });
+    });
+
+    // Speech Recognition
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Sorry, your browser does not support Speech Recognition.");
+      startBtn.disabled = true;
+    } else {
+      const recognition = new SpeechRecognition();
+      recognition.lang = "en-US";
+      recognition.interimResults = false;
+
+      recognition.onstart = () => {
+        statusDiv.textContent = "Listening... 🎤";
+        startBtn.disabled = true;
+      };
+
+      recognition.onend = () => {
+        statusDiv.textContent = "Press the button and speak commands";
+        startBtn.disabled = false;
+      };
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript.toLowerCase();
+        statusDiv.textContent = `Heard: "${transcript}"`;
+
+        if (transcript.includes("name")) {
+          document.getElementById("name").value = transcript.replace("name", "").trim();
+        } 
+        else if (transcript.includes("email")) {
+          document.getElementById("email").value = transcript.replace("email", "").trim();
+        } 
+        else if (transcript.includes("male")) {
+          document.querySelector("input[value='male']").checked = true;
+        } 
+        else if (transcript.includes("female")) {
+          document.querySelector("input[value='female']").checked = true;
+        } 
+        else if (transcript.includes("sports")) {
+          document.getElementById("sports").checked = true;
+        } 
+        else if (transcript.includes("music")) {
+          document.getElementById("music").checked = true;
+        } 
+        else if (transcript.includes("country")) {
+          dropdown.classList.add("open"); // auto open
+        } 
+        else if (transcript.includes("india")) {
+          toggle.textContent = "India";
+          toggle.dataset.value = "india";
+          dropdown.classList.remove("open");
+        } 
+        else if (transcript.includes("usa")) {
+          toggle.textContent = "USA";
+          toggle.dataset.value = "usa";
+          dropdown.classList.remove("open");
+        } 
+        else if (transcript.includes("uk")) {
+          toggle.textContent = "UK";
+          toggle.dataset.value = "uk";
+          dropdown.classList.remove("open");
+        }
+      };
+
+      startBtn.addEventListener("click", () => recognition.start());
+    }
   </script>
 </body>
 </html>
